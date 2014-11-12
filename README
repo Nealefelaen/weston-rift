@@ -1,3 +1,27 @@
+Weston-Rift
+
+Rift support as a 'postcompositor', it takes the display set up by a
+backend, swaps the framebuffer target to render into a texture, and
+renders that texture as a virtual display inside the rift. 3D SBS
+content support is in in a hacky form, pass --rift-sbs to enable.
+To rotate the output for the rift (if you aren't rotating the display
+in some other way), pass --rift-rotate.
+
+I'm still looking for a proper place to put the render_rift call, at
+the moment it's in the gl_renderer_repaint_output, which is only called
+when there is damage to the output display (moving the mouse works, or
+playing a movie)
+
+How to play 3D movies (with weston-rift and mpv):
+* Run Weston with `weston -R --rift-sbs (--rift-rotate)` (maybe add 
+  --fullscreen?)
+* If in X, move the Weston window to the rift (for tracking, have the rift
+  display on before launching)
+* Run, from any terminal, `mpv <SBS video file> --video-aspect 9:16 -fs`
+  (video-aspect is only needed if you're using --rift-rotate, I think)
+[Bonus] Youtube SBS videos on the rift (with quvi):
+* `quvi dump -s 720p --exec "mpv %u --video-aspect 9:16 -fs" <youtube link>`
+
 Weston
 
 Weston is the reference implementation of a Wayland compositor, and a

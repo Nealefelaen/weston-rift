@@ -41,6 +41,8 @@ extern "C" {
 #include "config-parser.h"
 #include "zalloc.h"
 
+#include "rift.h"
+
 #ifndef MIN
 #define MIN(x,y) (((x) < (y)) ? (x) : (y))
 #endif
@@ -669,6 +671,8 @@ struct weston_compositor {
 	int32_t kb_repeat_delay;
 
 	clockid_t presentation_clock;
+
+  struct oculus_rift *rift;
 };
 
 struct weston_buffer {

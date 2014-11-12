@@ -38,6 +38,8 @@
 #include <EGL/eglext.h>
 #include "weston-egl-ext.h"
 
+#include "postcompositor-rift.h"
+
 struct gl_shader {
 	GLuint program;
 	GLuint vertex_shader, fragment_shader;
@@ -867,14 +869,28 @@ gl_renderer_repaint_output(struct weston_output *output,
 	pixman_region32_t buffer_damage, total_damage;
 	enum gl_border_status border_damage = BORDER_STATUS_CLEAN;
 
-	/* Calculate the viewport */
-	glViewport(go->borders[GL_RENDERER_BORDER_LEFT].width,
-		   go->borders[GL_RENDERER_BORDER_BOTTOM].height,
-		   output->current_mode->width,
-		   output->current_mode->height);
+  if(compositor->rift->enabled == 1) {
+    glBindFramebuffer(GL_FRAMEBUFFER, compositor->rift->redirectedFramebuffer);
+    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    //compositor->rift->orig_surface = go->egl_surface;
+    //go->egl_surface = compositor->rift->pbuffer;
+    //use_output(output);
+    //eglMakeCurrent(gr->egl_display, go->egl_surface, go->egl_surface, gr->egl_context);
 
-	if (use_output(output) < 0)
-		return;
+    glViewport(0,
+         0,
+         compositor->rift->width,
+         compositor->rift->height);
+  } else {
+    /* Calculate the viewport */
+    glViewport(go->borders[GL_RENDERER_BORDER_LEFT].width,
+         go->borders[GL_RENDERER_BORDER_BOTTOM].height,
+         output->current_mode->width,
+         output->current_mode->height);
+  }
+
+  if (use_output(output) < 0)
+    return;
 
 	/* if debugging, redraw everything outside the damage to clean up
 	 * debug lines from the previous draw on this buffer:
@@ -909,53 +925,65 @@ gl_renderer_repaint_output(struct weston_output *output,
 	pixman_region32_copy(&output->previous_damage, output_damage);
 	wl_signal_emit(&output->frame_signal, output);
 
+  if(compositor->rift->enabled == 1) {
+    //go->egl_surface = compositor->rift->orig_surface;
+    //use_output(output);
+    //eglMakeCurrent(gr->egl_display, go->egl_surface, go->egl_surface, gr->egl_context);
+
+    render_rift(compositor, gr->current_shader->program);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    ret = eglSwapBuffers(gr->egl_display, go->egl_surface);
+  } else {
 #ifdef EGL_EXT_swap_buffers_with_damage
-	if (gr->swap_buffers_with_damage) {
-		pixman_region32_init(&buffer_damage);
-		weston_transformed_region(output->width, output->height,
-					  output->transform,
-					  output->current_scale,
-					  output_damage, &buffer_damage);
+    if (gr->swap_buffers_with_damage) {
+      pixman_region32_init(&buffer_damage);
+      weston_transformed_region(output->width, output->height,
+              output->transform,
+              output->current_scale,
+              output_damage, &buffer_damage);
 
-		if (output_has_borders(output)) {
-			pixman_region32_translate(&buffer_damage,
-						  go->borders[GL_RENDERER_BORDER_LEFT].width,
-						  go->borders[GL_RENDERER_BORDER_TOP].height);
-			output_get_border_damage(output, go->border_status,
-						 &buffer_damage);
-		}
+      if (output_has_borders(output)) {
+        pixman_region32_translate(&buffer_damage,
+                go->borders[GL_RENDERER_BORDER_LEFT].width,
+                go->borders[GL_RENDERER_BORDER_TOP].height);
+        output_get_border_damage(output, go->border_status,
+               &buffer_damage);
+      }
 
-		rects = pixman_region32_rectangles(&buffer_damage, &nrects);
-		egl_damage = malloc(nrects * 4 * sizeof(EGLint));
+      rects = pixman_region32_rectangles(&buffer_damage, &nrects);
+      egl_damage = malloc(nrects * 4 * sizeof(EGLint));
 
-		buffer_height = go->borders[GL_RENDERER_BORDER_TOP].height +
-				output->current_mode->height +
-				go->borders[GL_RENDERER_BORDER_BOTTOM].height;
+      buffer_height = go->borders[GL_RENDERER_BORDER_TOP].height +
+          output->current_mode->height +
+          go->borders[GL_RENDERER_BORDER_BOTTOM].height;
 
-		d = egl_damage;
-		for (i = 0; i < nrects; ++i) {
-			*d++ = rects[i].x1;
-			*d++ = buffer_height - rects[i].y2;
-			*d++ = rects[i].x2 - rects[i].x1;
-			*d++ = rects[i].y2 - rects[i].y1;
-		}
-		ret = gr->swap_buffers_with_damage(gr->egl_display,
-						   go->egl_surface,
-						   egl_damage, nrects);
-		free(egl_damage);
-		pixman_region32_fini(&buffer_damage);
-	} else {
-		ret = eglSwapBuffers(gr->egl_display, go->egl_surface);
-	}
+      d = egl_damage;
+      for (i = 0; i < nrects; ++i) {
+        *d++ = rects[i].x1;
+        *d++ = buffer_height - rects[i].y2;
+        *d++ = rects[i].x2 - rects[i].x1;
+        *d++ = rects[i].y2 - rects[i].y1;
+      }
+      ret = gr->swap_buffers_with_damage(gr->egl_display,
+                 go->egl_surface,
+                 egl_damage, nrects);
+      free(egl_damage);
+      pixman_region32_fini(&buffer_damage);
+    } else {
+      ret = eglSwapBuffers(gr->egl_display, go->egl_surface);
+    }
 #else /* ! defined EGL_EXT_swap_buffers_with_damage */
-	ret = eglSwapBuffers(gr->egl_display, go->egl_surface);
+    ret = eglSwapBuffers(gr->egl_display, go->egl_surface);
 #endif
+  }
 
-	if (ret == EGL_FALSE && !errored) {
-		errored = 1;
-		weston_log("Failed in eglSwapBuffers.\n");
-		gl_renderer_print_egl_error_state();
-	}
+  if (ret == EGL_FALSE && !errored) {
+    errored = 1;
+    weston_log("Failed in eglSwapBuffers.\n");
+    gl_renderer_print_egl_error_state();
+  }
 
 	go->border_status = BORDER_STATUS_CLEAN;
 }
@@ -1785,6 +1813,9 @@ gl_renderer_output_create(struct weston_output *output,
 	output->renderer_state = go;
 
 	log_egl_config_info(gr->egl_display, egl_config);
+
+  config_rift(ec);
+  //config_rift(ec, gr->egl_config, gr->egl_display, go->egl_surface, gr->egl_context);
 
 	return 0;
 }

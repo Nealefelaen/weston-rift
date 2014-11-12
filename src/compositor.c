@@ -60,6 +60,8 @@
 #include "git-version.h"
 #include "version.h"
 
+#include "postcompositor-rift.h"
+
 static struct wl_list child_process_list;
 static struct weston_compositor *segv_compositor;
 
@@ -4469,6 +4471,7 @@ usage(int error_code)
 		"  --modules\t\tLoad the comma-separated list of modules\n"
 		"  --log==FILE\t\tLog to the given file\n"
 		"  --no-config\t\tDo not read weston.ini\n"
+		"  -R, --rift\t\tOculus Rift post-compositor\n"
 		"  -h, --help\t\tThis help message\n\n");
 
 	fprintf(stderr,
@@ -4615,6 +4618,9 @@ int main(int argc, char *argv[])
 	char *socket_name = NULL;
 	int32_t version = 0;
 	int32_t noconfig = 0;
+	int32_t rift = 0;
+	int32_t riftsbs = 0; // should be on a hotkey, but have hacky support now
+	int32_t riftrotate = 0; // should be in config section
 	int32_t numlock_on;
 	struct weston_config *config = NULL;
 	struct weston_config_section *section;
@@ -4632,6 +4638,9 @@ int main(int argc, char *argv[])
 		{ WESTON_OPTION_BOOLEAN, "help", 'h', &help },
 		{ WESTON_OPTION_BOOLEAN, "version", 0, &version },
 		{ WESTON_OPTION_BOOLEAN, "no-config", 0, &noconfig },
+		{ WESTON_OPTION_BOOLEAN, "rift", 'R', &rift },
+		{ WESTON_OPTION_BOOLEAN, "rift-sbs", 0, &riftsbs }, // temporary
+		{ WESTON_OPTION_BOOLEAN, "rift-rotate", 0, &riftrotate }, // temporary
 	};
 
 	parse_options(core_options, ARRAY_LENGTH(core_options), &argc, argv);
@@ -4704,6 +4713,16 @@ int main(int argc, char *argv[])
 		ret = EXIT_FAILURE;
 		goto out_signals;
 	}
+
+	if (rift != 0)
+  {
+		weston_log("Running Oculus Rift version\n");
+    setup_rift(ec);
+    if(riftsbs !=0)
+      ec->rift->sbs = 1;
+    if(riftrotate != 0)
+      ec->rift->rotate = 1;
+  }
 
 	catch_signals();
 	segv_compositor = ec;
