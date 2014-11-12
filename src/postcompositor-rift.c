@@ -459,6 +459,34 @@ toggle_rotate(struct weston_seat *seat, uint32_t time, uint32_t key, void *data)
     compositor->rift->rotate = 1;
 }
 
+static void
+move_in(struct weston_seat *seat, uint32_t time, uint32_t key, void *data)
+{
+  struct weston_compositor *compositor = data;
+  compositor->rift->screen_z += 0.1;
+}
+
+static void
+move_out(struct weston_seat *seat, uint32_t time, uint32_t key, void *data)
+{
+  struct weston_compositor *compositor = data;
+  compositor->rift->screen_z -= 0.1;
+}
+
+static void
+scale_up(struct weston_seat *seat, uint32_t time, uint32_t key, void *data)
+{
+  struct weston_compositor *compositor = data;
+  compositor->rift->screen_scale += 0.1;
+}
+
+static void
+scale_down(struct weston_seat *seat, uint32_t time, uint32_t key, void *data)
+{
+  struct weston_compositor *compositor = data;
+  compositor->rift->screen_scale -= 0.1;
+}
+
 int
 setup_rift(struct weston_compositor *compositor)
 {
@@ -466,10 +494,21 @@ setup_rift(struct weston_compositor *compositor)
 
   rift->enabled = 1;
 
+  rift->screen_z = -5.0;
+  rift->screen_scale = 1.0;
+
   weston_compositor_add_key_binding(compositor, KEY_5, MODIFIER_SUPER, 
       toggle_sbs, compositor);
   weston_compositor_add_key_binding(compositor, KEY_6, MODIFIER_SUPER, 
       toggle_rotate, compositor);
+  weston_compositor_add_key_binding(compositor, KEY_7, MODIFIER_SUPER, 
+      move_in, compositor);
+  weston_compositor_add_key_binding(compositor, KEY_8, MODIFIER_SUPER, 
+      move_out, compositor);
+  weston_compositor_add_key_binding(compositor, KEY_9, MODIFIER_SUPER, 
+      scale_up, compositor);
+  weston_compositor_add_key_binding(compositor, KEY_0, MODIFIER_SUPER, 
+      scale_down, compositor);
 
   /*// use this at some point in the future to detect and grab the rift display
   struct weston_output *output;
@@ -751,8 +790,11 @@ render_rift(struct weston_compositor *compositor, GLuint original_program)
     const ovrEyeType eye = rift->hmd->EyeRenderOrder[i];
     struct EyeArg eyeArg = rift->eyeArgs[eye];
     
-    ovrMatrix4f Model = initTranslationF(0.0, 0.0, -5.0);
-    Model = matrix4fMul(initScale(3.2, 1.8, 1.0), Model);
+    ovrMatrix4f Model = initTranslationF(0.0, 0.0, rift->screen_z);
+    Model = matrix4fMul(initScale(
+          3.2 * rift->screen_scale, 
+          1.8 * rift->screen_scale, 
+          1.0), Model);
     ovrMatrix4f MV = matrix4fMul(posefToMatrix4f(eyePoses[eye]), Model);
     //MV = initIdentity();
     //MV.M[2][3] = 5;

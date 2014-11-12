@@ -90,6 +90,8 @@ struct oculus_rift {
   int enabled;
   int sbs;
   int rotate;
+  float screen_z;
+  float screen_scale;
 };
 
 
