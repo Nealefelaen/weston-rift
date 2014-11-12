@@ -4,6 +4,7 @@
 #include <wayland-server.h>
 #include <GLES2/gl2.h>
 #include <ovr-0.4.3/Src/OVR_CAPI.h>
+#include <linux/input.h>
 
 // Rift shaders
 // Distortion shader
@@ -438,12 +439,37 @@ static GLuint CreateProgram(const char *vertex_shader_src, const char *fragment_
   return program_object;
 }
 
+static void
+toggle_sbs(struct weston_seat *seat, uint32_t time, uint32_t key, void *data)
+{
+  struct weston_compositor *compositor = data;
+  if(compositor->rift->sbs == 1)
+    compositor->rift->sbs = 0;
+  else
+    compositor->rift->sbs = 1;
+}
+
+static void
+toggle_rotate(struct weston_seat *seat, uint32_t time, uint32_t key, void *data)
+{
+  struct weston_compositor *compositor = data;
+  if(compositor->rift->rotate == 1)
+    compositor->rift->rotate = 0;
+  else
+    compositor->rift->rotate = 1;
+}
+
 int
 setup_rift(struct weston_compositor *compositor)
 {
   struct oculus_rift *rift = compositor->rift;
 
   rift->enabled = 1;
+
+  weston_compositor_add_key_binding(compositor, KEY_5, MODIFIER_SUPER, 
+      toggle_sbs, compositor);
+  weston_compositor_add_key_binding(compositor, KEY_6, MODIFIER_SUPER, 
+      toggle_rotate, compositor);
 
   /*// use this at some point in the future to detect and grab the rift display
   struct weston_output *output;
@@ -696,7 +722,6 @@ setup_rift(struct weston_compositor *compositor)
 
   return 0;
 }
-
 int
 render_rift(struct weston_compositor *compositor, GLuint original_program)
 {
@@ -821,8 +846,8 @@ render_rift(struct weston_compositor *compositor, GLuint original_program)
   glEnable(GL_DEPTH_TEST);
 
   ovrHmd_EndFrameTiming(rift->hmd);
+
   // set program back to original shader program
-  weston_compositor_damage_all();
   glUseProgram(original_program);
   return 0;
 }

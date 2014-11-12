@@ -2028,6 +2028,10 @@ weston_output_repaint(struct weston_output *output)
 
 	output->repaint_needed = 0;
 
+  // We need to redraw every vsync for the rift
+  if(ec->rift->enabled)
+    output->repaint_needed = 1;
+
 	weston_compositor_repick(ec);
 	wl_event_loop_dispatch(ec->input_loop, 0);
 

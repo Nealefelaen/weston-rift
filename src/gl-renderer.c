@@ -986,6 +986,9 @@ gl_renderer_repaint_output(struct weston_output *output,
   }
 
 	go->border_status = BORDER_STATUS_CLEAN;
+  if(compositor->rift->enabled == 1) {
+    weston_output_damage(output);
+  }
 }
 
 static int
