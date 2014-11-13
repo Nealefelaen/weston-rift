@@ -4482,8 +4482,10 @@ usage(int error_code)
 		"Options for drm-backend.so:\n\n"
 		"  --connector=ID\tBring up only this connector\n"
 		"  --seat=SEAT\t\tThe seat that weston should run on\n"
+		"  --card=PATH\tPath of graphics card to run on (e.g. /dev/dri/card0)\n"
 		"  --tty=TTY\t\tThe tty to use\n"
 		"  --use-pixman\t\tUse the pixman (CPU) renderer\n"
+		"  --use-gl-cursors\t\tUse GL cursors\n"
 		"  --current-mode\tPrefer current KMS mode over EDID preferred mode\n\n");
 
 	fprintf(stderr,
