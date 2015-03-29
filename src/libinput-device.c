@@ -134,7 +134,7 @@ handle_pointer_axis(struct libinput_device *libinput_device,
 		libinput_device_get_user_data(libinput_device);
 	double value;
 
-	value = libinput_event_pointer_get_axis_value(pointer_event);
+	value = libinput_event_pointer_get_axis_value(pointer_event, LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL); //TODO: fix
 	notify_axis(device->seat,
 		    libinput_event_pointer_get_time(pointer_event),
 		    libinput_event_pointer_get_axis(pointer_event),

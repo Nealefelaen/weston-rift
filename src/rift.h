@@ -25,7 +25,7 @@
 
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
-#include <ovr-0.4.3/Src/OVR_CAPI.h>
+#include <OVR_CAPI.h>
 
 struct EyeArg {
   GLuint framebuffer;

@@ -3,7 +3,7 @@
 #include "gl-renderer.h"
 #include <wayland-server.h>
 #include <GLES2/gl2.h>
-#include <ovr-0.4.3/Src/OVR_CAPI.h>
+#include <OVR_CAPI.h>
 #include <linux/input.h>
 
 // Rift shaders
@@ -637,7 +637,7 @@ setup_rift(struct weston_compositor *compositor)
   eglBindTexImage(rift->egl_display, rift->pbuffer, EGL_BACK_BUFFER);
   eglMakeCurrent(rift->egl_display, rift->orig_surface, rift->orig_surface, rift->egl_context);*/
 
-  ovr_Initialize();
+  ovr_Initialize(0);
   rift->hmd = ovrHmd_Create(0);
   if(rift->hmd == NULL)
   {
